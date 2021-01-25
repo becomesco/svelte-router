@@ -1,5 +1,5 @@
 {
-  "name": "svelte-app",
+  "name": "@becomes/svelte-router",
   "version": "1.0.0",
   "scripts": {
     "build": "rollup -c",
@@ -38,5 +38,15 @@
   },
   "dependencies": {
     "uuid": "^8.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/becomesco/svelte-router.git"
+  },
+  "keywords": [],
+  "author": "Branislav Vajagić",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/becomesco/svelte-router/issues"
   }
 }
