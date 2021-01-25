@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { RouterContainer } from '../src/components';
   import { Router } from '../src';
+  import { RouterContainer } from '../src/components';
   import { P1, P2, P404 } from './pages';
 
   Router.register(
