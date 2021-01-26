@@ -96,45 +96,6 @@ const bundle = async () => {
       },
     },
     {
-      title: 'Copy files',
-      task: async () => {
-        await util.promisify(fs.mkdir)(path.join(__dirname, 'dist'));
-        await fse.copy(
-          path.join(__dirname, 'src'),
-          path.join(__dirname, 'dist', 'src')
-        );
-        await fse.copy(
-          path.join(__dirname, 'bin'),
-          path.join(__dirname, 'dist', 'bin')
-        );
-        await fse.copy(
-          path.join(__dirname, 'rollup.config.js'),
-          path.join(__dirname, 'dist', 'rollup.config.js')
-        );
-        await fse.copy(
-          path.join(__dirname, 'tsconfig.json'),
-          path.join(__dirname, 'dist', 'tsconfig.json')
-        );
-        await fse.copy(
-          path.join(__dirname, 'index.js'),
-          path.join(__dirname, 'dist', 'index.js')
-        );
-        await fse.copy(
-          path.join(__dirname, 'index.js'),
-          path.join(__dirname, 'dist', 'index.d.ts')
-        );
-        await fse.copy(
-          path.join(__dirname, 'index.js'),
-          path.join(__dirname, 'dist', 'index.js.map')
-        );
-        await fse.copy(
-          path.join(__dirname, 'public'),
-          path.join(__dirname, 'dist', 'public')
-        );
-        await fse.remove(path.join(__dirname, 'dist', 'public', 'build'));
-      },
-    },
-    {
       title: 'Copy package.json',
       task: async () => {
         const data = JSON.parse(
