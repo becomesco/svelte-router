@@ -1,4 +1,4 @@
-import * as uuid from "uuid";
+import * as uuid from 'uuid';
 
 export interface Route {
   path: string;
@@ -6,25 +6,40 @@ export interface Route {
   props?: any;
   children?: Route[];
 }
+
 export interface RouteOptions {
   data?: any;
   replace?: boolean;
   push?: boolean;
 }
+
 export interface RouteParams {
   [key: string]: string;
 }
+
 export interface RouterPrototype {
   setTitleSuffix(suffix: string): void;
+
   setTitle(title: string): void;
+
   listen(listener: RouterListener): void;
+
   register(routes: Route[], defaultRoute?: RouteInternal, base?: string): void;
+
   unregister(path: string): void;
+
+  beforeNavigate(handler: (path: string) => Promise<boolean>): () => void;
+
   navigate(path: string, options?: RouteOptions): void;
+
   path(): string;
+
   subscribeToPathChange(callback: (path: string) => void): () => void;
+
   isAvailable(path: string): boolean;
+
   back(): void;
+
   forward(): void;
 }
 
@@ -33,6 +48,7 @@ interface RouteInternal {
   component: any;
   props?: any;
 }
+
 type RouterRegistry = {
   [path: string]: {
     id: string;
@@ -54,7 +70,7 @@ function getPathData(registry: RouterRegistry, pathParts: string[]) {
       const params: RouteParams = {};
       let match = true;
       for (const i in reg.pathParts) {
-        if (reg.pathParts[i].charAt(0) === ":") {
+        if (reg.pathParts[i].charAt(0) === ':') {
           params[reg.pathParts[i].substring(1)] = pathParts[i];
         } else if (reg.pathParts[i] !== pathParts[i]) {
           match = false;
@@ -65,12 +81,13 @@ function getPathData(registry: RouterRegistry, pathParts: string[]) {
         return {
           component: reg.route.component,
           params,
-          props: reg.route.props,
+          props: reg.route.props
         };
       }
     }
   }
 }
+
 function onPathChange(
   registry: RouterRegistry,
   listener: RouterListener,
@@ -80,16 +97,34 @@ function onPathChange(
 ) {
   const exec = registry[path];
   if (exec) {
-    listener(exec.route.component, {}, exec.route.props, options);
+    listener(
+      exec.route.component,
+      {},
+      exec.route.props,
+      options
+    );
     return;
   }
-  const pathParts = path.split("?")[0].split("/");
-  const data = getPathData(registry, pathParts);
+  const pathParts = path.split('?')[0].split('/');
+  const data = getPathData(
+    registry,
+    pathParts
+  );
   if (data) {
-    listener(data.component, data.params, data.props, options);
+    listener(
+      data.component,
+      data.params,
+      data.props,
+      options
+    );
   } else {
     if (defaultRoute) {
-      listener(defaultRoute.component, {}, defaultRoute.props, options);
+      listener(
+        defaultRoute.component,
+        {},
+        defaultRoute.props,
+        options
+      );
     }
   }
 }
@@ -100,18 +135,31 @@ function router() {
     id: string;
     callback: (path: string) => void;
   }> = [];
+  const beforeNavigateHandlers: Array<{
+    id: string;
+    handler: (path: string) => Promise<boolean>;
+  }> = [];
   let defaultRoute: Route;
-  let currentPath = "";
+  let currentPath = '';
   let listener: RouterListener;
-  let suffix = "";
+  let suffix = '';
 
-  window.addEventListener("popstate", () => {
-    currentPath = window.location.pathname;
-    push(window.location.pathname);
-  });
+  window.addEventListener(
+    'popstate',
+    () => {
+      currentPath = window.location.pathname;
+      push(window.location.pathname);
+    }
+  );
 
   function push(path: string, options?: RouteOptions) {
-    onPathChange(registry, listener, defaultRoute, path, options);
+    onPathChange(
+      registry,
+      listener,
+      defaultRoute,
+      path,
+      options
+    );
     pathChangeSubs.forEach((e) => {
       e.callback(path);
     });
@@ -131,21 +179,27 @@ function router() {
       if (dRoute) {
         defaultRoute = dRoute;
       }
-      if (typeof base === "undefined") {
-        base = "";
+      if (typeof base === 'undefined') {
+        base = '';
       }
       _routes.forEach((route) => {
         if (route.children) {
-          self.register(route.children, undefined, base + route.path);
+          self.register(
+            route.children,
+            undefined,
+            base + route.path
+          );
         }
         registry[base + route.path] = {
           id: uuid.v4(),
-          pathParts: (base + route.path).split("/"),
+          pathParts: (
+            base + route.path
+          ).split('/'),
           route: {
             component: route.component,
             path: route.path,
-            props: route.props,
-          },
+            props: route.props
+          }
         };
       });
     },
@@ -154,25 +208,74 @@ function router() {
         delete registry[path];
       }
     },
-    navigate(path: string, options) {
-      if (path === currentPath) {
-        currentPath = path;
-        push(path, options);
-        return;
-      }
-      currentPath = path;
-      if (options) {
-        if (!options.push) {
-          if (options.replace) {
-            window.history.replaceState(options.data, "", path);
-          } else {
-            window.history.pushState(options.data, "", path);
+    beforeNavigate(handler) {
+      const id = uuid.v4();
+      beforeNavigateHandlers.push({
+        id,
+        handler
+      });
+      return () => {
+        for (let i = 0; i < beforeNavigateHandlers.length; i++) {
+          if (beforeNavigateHandlers.find(e => e.id === id)) {
+            beforeNavigateHandlers.splice(
+              i,
+              1
+            );
+            return;
           }
         }
-      } else {
-        window.history.pushState(undefined, "", path);
-      }
-      push(path, options);
+      };
+    },
+    navigate(path: string, options) {
+      const loop = async () => {
+        for (let i = 0; i < beforeNavigateHandlers.length; i++) {
+          if (await beforeNavigateHandlers[i].handler(path) === false) {
+            return false;
+          }
+        }
+        return true;
+      };
+      loop().then(result => {
+        if (!result) {
+          return;
+        }
+        if (path === currentPath) {
+          currentPath = path;
+          push(
+            path,
+            options
+          );
+          return;
+        }
+        currentPath = path;
+        if (options) {
+          if (!options.push) {
+            if (options.replace) {
+              window.history.replaceState(
+                options.data,
+                '',
+                path
+              );
+            } else {
+              window.history.pushState(
+                options.data,
+                '',
+                path
+              );
+            }
+          }
+        } else {
+          window.history.pushState(
+            undefined,
+            '',
+            path
+          );
+        }
+        push(
+          path,
+          options
+        );
+      });
     },
     path() {
       return currentPath;
@@ -181,20 +284,26 @@ function router() {
       const id = uuid.v4();
       pathChangeSubs.push({
         id,
-        callback,
+        callback
       });
       return () => {
         for (let i = 0; i < pathChangeSubs.length; i++) {
           if (pathChangeSubs[i].id === id) {
-            pathChangeSubs.splice(i, 1);
+            pathChangeSubs.splice(
+              i,
+              1
+            );
             break;
           }
         }
       };
     },
     isAvailable(path) {
-      const pathParts = path.split("?")[0].split("/");
-      const data = getPathData(registry, pathParts);
+      const pathParts = path.split('?')[0].split('/');
+      const data = getPathData(
+        registry,
+        pathParts
+      );
       return data ? true : false;
     },
     back() {
@@ -202,7 +311,7 @@ function router() {
     },
     forward() {
       window.history.forward();
-    },
+    }
   };
   return self;
 }

@@ -1,21 +1,35 @@
-import { Router } from "./core";
+import { Router } from './core';
 
 export function link(element: HTMLAnchorElement) {
   function click(event: Event) {
     event.preventDefault();
-    if (element.getAttribute("disabled") === "true") {
+    if (element.getAttribute('disabled') === 'true') {
       return;
     }
-    if (element.href.startsWith("http")) {
-      Router.navigate("/" + element.href.split("/").splice(3).join("/"));
+    if (element.getAttribute('target') === '_blank') {
+      window.open(
+        element.href,
+        '_blank'
+      );
     } else {
-      Router.navigate(element.href);
+      if (element.href.startsWith('http')) {
+        Router.navigate('/' + element.href.split('/').splice(3).join('/'));
+      } else {
+        Router.navigate(element.href);
+      }
     }
   }
-  element.addEventListener("click", click);
+
+  element.addEventListener(
+    'click',
+    click
+  );
   return {
     destroy() {
-      element.removeEventListener("click", click);
-    },
+      element.removeEventListener(
+        'click',
+        click
+      );
+    }
   };
 }
